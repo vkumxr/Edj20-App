@@ -87,7 +87,6 @@ namespace Edj20Tester
             byte crcHi = (byte)(pkt.Crc >> 8);
             AddRow(grid, row++, "Error Check Lo (CRC)", $"{crcLo:X2}", $"LRC ({crcLo:X2})");
             AddRow(grid, row++, "Error Check Hi (CRC)", $"{crcHi:X2}", "None");
-            AddRow(grid, row++, "Trailer", "None", "CR LF");
             AddRow(grid, row++, "Total Bytes", pkt.RawBytes.Length.ToString(), "—");
 
             outerStack.Children.Add(WrapTable(grid));
