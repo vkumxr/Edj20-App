@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Edj20Tester.Models;
 
 namespace Edj20Tester
 {
@@ -12,16 +13,29 @@ namespace Edj20Tester
             InitializeComponent();
         }
 
+        // ── Button handlers ───────────────────────────────────────────────────
+
         private async void btnStart_Click(object sender, RoutedEventArgs e)
         {
             btnStart.IsEnabled = false;
             StatusDot.Fill = Brushes.Yellow;
             StatusText.Text = "STATUS : RUNNING...";
 
-            var client = new DeviceClient();
-            var response = await client.SendAsync("READ_INPUT_REGISTERS");
+            var selected = (cmbFunction.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+            var function = selected switch
+            {
+                "FC01" => ModbusFunction.FC01_ReadCoils,
+                "FC02" => ModbusFunction.FC02_ReadDiscreteInputs,
+                "FC03" => ModbusFunction.FC03_ReadHoldingRegisters,
+                _ => ModbusFunction.FC04_ReadInputRegisters
+            };
 
+            var client = new DeviceClient();
+            var response = await client.SendAsync(function);
+
+            PacketPanel.Children.Clear();
             ShowPackets(response);
+            PacketScroller.ScrollToTop();
 
             StatusDot.Fill = response.IsError ? Brushes.Red : Brushes.Lime;
             StatusText.Text = response.IsError ? "STATUS : ERROR" : "STATUS : PASS";
@@ -35,32 +49,39 @@ namespace Edj20Tester
             StatusText.Text = "STATUS : READY";
         }
 
+        // ── Render ────────────────────────────────────────────────────────────
+
         private void ShowPackets(DeviceResponse response)
         {
             if (response.Request != null)
                 PacketPanel.Children.Add(BuildRequestTable(response.Request));
-
             if (response.Response != null)
                 PacketPanel.Children.Add(BuildResponseTable(response.Response));
         }
 
+        // ── REQUEST table ─────────────────────────────────────────────────────
+
         private UIElement BuildRequestTable(ModbusPacket pkt)
         {
             var outerStack = new StackPanel { Margin = new Thickness(0, 0, 0, 20) };
-
             outerStack.Children.Add(SectionLabel("REQUEST", "#00FFFF"));
+
+            bool isCoil = pkt.Function == ModbusFunction.FC01_ReadCoils ||
+                          pkt.Function == ModbusFunction.FC02_ReadDiscreteInputs;
+
+            string qtyLabel = isCoil ? "Quantity of Coils" : "No. of Registers";
 
             var grid = MakeTableGrid();
             AddHeaderRow(grid, 0);
 
             int row = 1;
             AddRow(grid, row++, "Header", "None", "None");
-            AddRow(grid, row++, "Slave Address", $"{pkt.SlaveAddress:X2}", $"{pkt.SlaveAddress:X2}");
+            AddRow(grid, row++, "Slave Address", $"{pkt.SlaveAddress:X2}", $"0 {pkt.SlaveAddress:X}");
             AddRow(grid, row++, "Function", $"{pkt.FunctionCode:X2}", $"0 {pkt.FunctionCode:X}");
             AddRow(grid, row++, "Starting Address Hi", $"{(pkt.StartAddress >> 8):X2}", $"0 {(pkt.StartAddress >> 8):X}");
             AddRow(grid, row++, "Starting Address Lo", $"{(pkt.StartAddress & 0xFF):X2}", $"0 {(pkt.StartAddress & 0xFF):X}");
-            AddRow(grid, row++, "Quantity of Registers Hi", $"{(pkt.Quantity >> 8):X2}", $"0 {(pkt.Quantity >> 8):X}");
-            AddRow(grid, row++, "Quantity of Registers Lo", $"{(pkt.Quantity & 0xFF):X2}", $"0 {(pkt.Quantity & 0xFF):X}");
+            AddRow(grid, row++, $"{qtyLabel} Hi", $"{(pkt.Quantity >> 8):X2}", $"0 {(pkt.Quantity >> 8):X}");
+            AddRow(grid, row++, $"{qtyLabel} Lo", $"{(pkt.Quantity & 0xFF):X2}", $"0 {(pkt.Quantity & 0xFF):X}");
 
             byte crcLo = (byte)(pkt.Crc & 0xFF);
             byte crcHi = (byte)(pkt.Crc >> 8);
@@ -71,15 +92,18 @@ namespace Edj20Tester
 
             outerStack.Children.Add(WrapTable(grid));
             outerStack.Children.Add(RawHexBlock(pkt.RawBytes, "#00FFFF"));
-
             return outerStack;
         }
+
+        // ── RESPONSE table ────────────────────────────────────────────────────
 
         private UIElement BuildResponseTable(ModbusPacket pkt)
         {
             var outerStack = new StackPanel { Margin = new Thickness(0, 0, 0, 20) };
-
             outerStack.Children.Add(SectionLabel("RESPONSE", "#00FF00"));
+
+            bool isCoil = pkt.Function == ModbusFunction.FC01_ReadCoils ||
+                          pkt.Function == ModbusFunction.FC02_ReadDiscreteInputs;
 
             var grid = MakeTableGrid();
             AddHeaderRow(grid, 0);
@@ -92,11 +116,27 @@ namespace Edj20Tester
 
             if (pkt.DataBytes != null)
             {
-                for (int i = 0; i < pkt.DataBytes.Length; i += 2)
+                if (isCoil)
                 {
-                    int regNum = (i / 2) + 1;
-                    AddRow(grid, row++, $"Data Hi (Reg {regNum})", $"{pkt.DataBytes[i]:X2}", $"0 {pkt.DataBytes[i]:X}");
-                    AddRow(grid, row++, $"Data Lo (Reg {regNum})", $"{pkt.DataBytes[i + 1]:X2}", $"0 {pkt.DataBytes[i + 1]:X}");
+                    // Each byte holds up to 8 coil statuses as bits
+                    for (int i = 0; i < pkt.DataBytes.Length; i++)
+                    {
+                        byte b = pkt.DataBytes[i];
+                        AddRow(grid, row++,
+                            $"Coil Status (Byte {i + 1})",
+                            $"{b:X2}",
+                            $"0 {b:X}  [bits: {Convert.ToString(b, 2).PadLeft(8, '0')}]");
+                    }
+                }
+                else
+                {
+                    // Each pair of bytes is one 16-bit register
+                    for (int i = 0; i < pkt.DataBytes.Length; i += 2)
+                    {
+                        int regNum = (i / 2) + 1;
+                        AddRow(grid, row++, $"Data Hi (Reg {regNum})", $"{pkt.DataBytes[i]:X2}", $"0 {pkt.DataBytes[i]:X}");
+                        AddRow(grid, row++, $"Data Lo (Reg {regNum})", $"{pkt.DataBytes[i + 1]:X2}", $"0 {pkt.DataBytes[i + 1]:X}");
+                    }
                 }
             }
 
@@ -109,7 +149,6 @@ namespace Edj20Tester
 
             outerStack.Children.Add(WrapTable(grid));
             outerStack.Children.Add(RawHexBlock(pkt.RawBytes, "#00FF00"));
-
             return outerStack;
         }
 
@@ -120,9 +159,9 @@ namespace Edj20Tester
         private Grid MakeTableGrid()
         {
             var g = new Grid();
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(240) });
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) });
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(220) });
-            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(110) });
-            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(170) });
             return g;
         }
 
@@ -198,7 +237,6 @@ namespace Edj20Tester
                     parts.Append(doubleSpace ? "  " : " ");
                 }
             }
-
             return new TextBlock
             {
                 Text = parts.ToString(),
