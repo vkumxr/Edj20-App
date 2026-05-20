@@ -28,30 +28,8 @@
                     Margin="0,0,0,16" VerticalAlignment="Center">
 
             <!-- Dropdown label -->
-            <TextBlock Text="Input Method"
-                       Foreground="#AAAAAA"
-                       FontFamily="Consolas"
-                       FontSize="13"
-                       VerticalAlignment="Center"
-                       Margin="0,0,8,0"/>
 
             <!-- Function code dropdown -->
-            <ComboBox Name="cmbFunction"
-                      Width="260" Height="40"
-                      Background="#111111"
-                      Foreground="Black"
-                      BorderBrush="#444444"
-                      BorderThickness="1"
-                      FontFamily="Consolas"
-                      FontSize="13"
-                      VerticalContentAlignment="Center"
-                      Padding="8,0,0,0"
-                      Margin="0,0,12,0">
-                <ComboBoxItem Content="Coils"             Tag="FC01" IsSelected="True"/>
-                <ComboBoxItem Content="Discrete Inputs"   Tag="FC02"/>
-                <ComboBoxItem Content="Holding Registers" Tag="FC03"/>
-                <ComboBoxItem Content="Input Registers"   Tag="FC04"/>
-            </ComboBox>
 
             <!-- Start button -->
             <Button Name="btnStart"
