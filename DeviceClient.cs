@@ -86,7 +86,7 @@ namespace Edj20Tester
             });
         }
 
-        // ── FC01 / FC02 – Read Coils / Discrete Inputs ────────────────────────
+        //FC01/FC02–Read Coils/Discrete Inputs
         private DeviceResponse BuildReadCoilResponse(ModbusFunction function)
         {
             byte fc = (byte)function;
