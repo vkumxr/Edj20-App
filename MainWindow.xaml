@@ -37,6 +37,16 @@
             <Setter Property="FontSize"    Value="13"/>
         </Style>
 
+        <Style TargetType="TextBox">
+            <Setter Property="Background"  Value="#111111"/>
+            <Setter Property="Foreground"  Value="White"/>
+            <Setter Property="BorderBrush" Value="#555555"/>
+            <Setter Property="FontFamily"  Value="Consolas"/>
+            <Setter Property="FontSize"    Value="13"/>
+            <Setter Property="Padding"     Value="6,4"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
         <Style x:Key="DarkButton" TargetType="Button">
             <Setter Property="Background"      Value="#111111"/>
             <Setter Property="BorderThickness" Value="1"/>
@@ -76,6 +86,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -87,8 +98,89 @@
                    FontWeight="Bold"
                    Margin="0,0,0,16"/>
 
+        <!-- TCP CONNECTION ROW -->
+        <Border Grid.Row="1"
+                Background="#111111"
+                BorderBrush="#555555"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="12,8"
+                Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+
+                <TextBlock Text="IP Address:"
+                           Foreground="#AAAAAA"
+                           FontFamily="Consolas"
+                           FontSize="13"
+                           VerticalAlignment="Center"
+                           Margin="0,0,8,0"/>
+
+                <TextBox Name="TxtIpAddress"
+                         Width="160" Height="34"
+                         Text="192.168.1.100"
+                         Margin="0,0,14,0"/>
+
+                <TextBlock Text="Port:"
+                           Foreground="#AAAAAA"
+                           FontFamily="Consolas"
+                           FontSize="13"
+                           VerticalAlignment="Center"
+                           Margin="0,0,8,0"/>
+
+                <TextBox Name="TxtPort"
+                         Width="70" Height="34"
+                         Text="502"
+                         Margin="0,0,16,0"/>
+
+                <Button Name="btnConnect"
+                        Click="btnConnect_Click"
+                        Content="CONNECT"
+                        Width="110" Height="34"
+                        Foreground="#00CCFF"
+                        BorderBrush="#00CCFF"
+                        Margin="0,0,10,0"
+                        Style="{StaticResource DarkButton}"/>
+
+                <Button Name="btnDisconnect"
+                        Click="btnDisconnect_Click"
+                        Content="DISCONNECT"
+                        Width="120" Height="34"
+                        Foreground="#FF9900"
+                        BorderBrush="#FF9900"
+                        IsEnabled="False"
+                        Margin="0,0,20,0"
+                        Style="{StaticResource DarkButton}"/>
+
+                <!-- TCP connection status pill -->
+                <Border CornerRadius="6"
+                        Padding="10,4"
+                        VerticalAlignment="Center">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="#330000"/>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Name="TcpDot"
+                                 Width="10" Height="10"
+                                 Fill="#FF3333"
+                                 VerticalAlignment="Center"
+                                 Margin="0,0,8,0"/>
+                        <TextBlock Name="TcpStatusText"
+                                   Text="TCP : DISCONNECTED"
+                                   Foreground="#FF3333"
+                                   FontFamily="Consolas"
+                                   FontSize="12"
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </Border>
+
         <!-- TOP CONTROLS -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal"
+        <StackPanel Grid.Row="2" Orientation="Horizontal"
                     Margin="0,0,0,12" VerticalAlignment="Center">
 
             <TextBlock Text="Function:"
@@ -119,6 +211,7 @@
                     Width="140" Height="40"
                     Foreground="Lime"
                     BorderBrush="Lime"
+                    IsEnabled="False"
                     Style="{StaticResource DarkButton}"/>
 
             <Button Name="btnClear"
@@ -133,7 +226,7 @@
         </StackPanel>
 
         <!-- SIDE-BY-SIDE PACKET AREA -->
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="14"/>
@@ -205,7 +298,7 @@
         </Grid>
 
         <!-- STATUS BAR -->
-        <Border Grid.Row="3"
+        <Border Grid.Row="4"
                 Background="#222222"
                 CornerRadius="8"
                 Padding="12"
