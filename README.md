@@ -1,69 +1,86 @@
-# Modbus RTU Operations
+# Modbus RTU vs Modbus TCP/IP
 
-For CRC, Modbus sends the lower byte first and then the upper byte.
+## What Changes?
 
----
+The main difference between Modbus RTU and Modbus TCP/IP is the **frame structure**.
 
-# Procedure
+### Modbus RTU Frame
 
-1. Create request bytes  
-2. Calculate CRC  
-3. Append CRC  
-4. Simulate response  
-5. Convert to hex/string  
-6. Display/log output  
+```text
+[SlaveID][FunctionCode][Data][CRC-Lo][CRC-Hi]
+```
 
----
-
-# Operations
-
-## Read Operations
-
-- FC01 – Read Coils  
-- FC02 – Read Discrete Inputs  
-- FC03 – Read Holding Registers  
-- FC04 – Read Input Registers  
-
-## Write Operations
-
-- FC05 – Write Single Coil  
-- FC06 – Write Single Register  
-- FC15 – Write Multiple Coils  
-- FC16 – Write Multiple Registers  
+- Uses serial communication (RS485/UART)
+- Includes CRC for error checking
+- Compact binary frame
 
 ---
 
-# Function Code Details
+### Modbus TCP/IP Frame
 
-FC01–FC06 are the most common and were defined early in the Modbus standard.  
-FC07–FC14 exist but are rarely used (examples include FC07 = Read Exception Status and FC08 = Diagnostics), since they are mostly device-specific.
+```text
+[TransID-Hi][TransID-Lo]
+[Proto-Hi][Proto-Lo]
+[Len-Hi][Len-Lo]
+[UnitID]
+[FunctionCode]
+[Data...]
+```
 
-FC15 and FC16 (`0x0F` and `0x10` in hexadecimal) are the *Write Multiple* versions.  
-They were introduced later to support writing multiple coils/registers in a single request instead of repeatedly sending FC05/FC06 requests.
+- Uses Ethernet/TCP communication
+- Replaces CRC with an MBAP Header
+- Runs on TCP Port `502`
 
-So the overall pattern becomes:
+---
 
-| FC  | Operation      | Data Type                              |
-|-----|----------------|----------------------------------------|
-| 01  | Read           | Coils (single bits, read/write)        |
-| 02  | Read           | Discrete Inputs (single bits, read only) |
-| 03  | Read           | Holding Registers (16-bit, read/write) |
-| 04  | Read           | Input Registers (16-bit, read only)    |
-| 05  | Write Single   | Coil                                   |
-| 06  | Write Single   | Register                               |
-| 15  | Write Multiple | Coils                                  |
-| 16  | Write Multiple | Registers                              |
+## Key Difference
 
-FC07–FC14 are skipped in most industrial devices because they are either diagnostic/device-specific or were never widely adopted.
+| Feature | Modbus RTU | Modbus TCP/IP |
+|---|---|---|
+| Communication | Serial | Ethernet/TCP |
+| Error Check | CRC | TCP checksum |
+| Header | None | MBAP Header |
+| Port | COM Port | Port 502 |
+| Speed | Slower | Faster |
 
-The EDJ20 device almost certainly only requires:
-- FC01
-- FC02
-- FC03
-- FC04
-- FC05
-- FC06
-- FC15
-- FC16
+---
 
-which matches the implemented operations.
+## MBAP Header Structure
+
+| Bytes | Field |
+|---|---|
+| 2 | Transaction ID |
+| 2 | Protocol ID |
+| 2 | Length |
+| 1 | Unit ID |
+
+---
+
+## Example Read Holding Register Request (TCP)
+
+```text
+00 01 00 00 00 06 01 03 00 00 00 01
+```
+
+### Breakdown
+
+| Bytes | Meaning |
+|---|---|
+| 00 01 | Transaction ID |
+| 00 00 | Protocol ID |
+| 00 06 | Length |
+| 01 | Unit ID |
+| 03 | Function Code |
+| 00 00 | Start Address |
+| 00 01 | Quantity |
+
+---
+
+## Project Goal
+
+This project demonstrates:
+- Modbus TCP/IP connection using C#
+- Reading Holding Registers
+- Writing Holding Registers
+- Understanding MBAP framing
+- Comparing RTU and TCP packet structures
