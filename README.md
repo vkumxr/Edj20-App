@@ -84,3 +84,9 @@ This project demonstrates:
 - Writing Holding Registers
 - Understanding MBAP framing
 - Comparing RTU and TCP packet structures
+
+
+
+Simulating our PC as a Modbus TCP/IP Slave using diagslave
+
+CMD - diagslave.exe -m tcp -p <portno.>
